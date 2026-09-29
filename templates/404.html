@@ -1,1 +1,52 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Page not found.">
+  <title>404 Not Found - GIRAI 2024</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body data-scale="medium">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site-shell">
+  
+  <header class="masthead">
+    <div class="masthead-brand">
+      <span class="brand-title">Responsible AI Atlas</span>
+    </div>
+    <div class="masthead-tools" aria-label="Display settings">
+      <div class="tool-group">
+        <span class="tool-label">Text</span>
+        <div class="segmented" role="group" aria-label="Text size">
+          <button type="button" data-scale="small" aria-pressed="false">Small</button>
+          <button type="button" data-scale="medium" aria-pressed="true">Medium</button>
+          <button type="button" data-scale="large" aria-pressed="false">Large</button>
+        </div>
+      </div>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-pressed="false">Dark mode</button>
+    </div>
+  </header>
 
+  <main id="main-content" style="min-height: 65vh;">
+    <section class="hero" aria-labelledby="hero-title" style="border-bottom: none;">
+      <div class="hero-copy">
+        <p class="kicker">404 Error</p>
+        <h1 id="hero-title">Page not found.</h1>
+        <p class="hero-deck">The requested view, dimension, or country profile could not be found.</p>
+        
+        <div style="margin-top: 2.5rem;">
+          <a href="/" class="utility-button" style="text-decoration: none; display: inline-block;">Return to the Atlas</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <!-- 404 Footer Content -->
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
