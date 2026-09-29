@@ -6,7 +6,6 @@ from pathlib import Path
 
 import plotly.graph_objects as go
 import polars as pl
-#import numpy
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
@@ -239,10 +238,12 @@ def get_explore(view="overall", metric="Overall index", pillar="Thematic score",
     }
 
 
-def get_rankings(region="All regions", sort="ranking", direction="asc"):
+def get_rankings(region="All regions", sort="ranking", direction="asc", iso3=""):
     df = RANK
     if region != "All regions":
         df = df.filter(pl.col("region") == region)
+    if iso3:
+        df = df.filter(pl.col("iso3") == iso3.upper())
     allowed = {
         "ranking", "country", "region", "index_score", "human_rights_score",
         "governance_score", "capacities_score"
@@ -312,7 +313,6 @@ def figure_map(view="overall", metric="Overall index", pillar="Thematic score", 
         z=df["score"].to_list(),
         locationmode="ISO-3",
         text=df["country"].to_list(),
-        # customdata=df.select(["iso3", "region"]).to_numpy().tolist(),
         customdata=df.select(["iso3", "region"]).rows(),
         colorscale=CHORO,
         zmin=0,
@@ -407,21 +407,31 @@ def figure_country_profile(iso3: str):
     if not p:
         return {"data": [], "layout": _figure_layout()}
     r = p["summary"]
-    labels = ["Human rights", "Governance", "Capacities", "Frameworks", "Actions", "Non-state actors"]
-    values = [r["human_rights_score"], r["governance_score"], r["capacities_score"], r["frameworks_score"], r["actions_score"], r["nonstate_score"]]
+    profile_rows = [
+        ("Human rights", r["human_rights_score"]),
+        ("Governance", r["governance_score"]),
+        ("Capacities", r["capacities_score"]),
+        ("Frameworks", r["frameworks_score"]),
+        ("Actions", r["actions_score"]),
+        ("Non-state actors", r["nonstate_score"]),
+    ]
+    profile_rows.sort(key=lambda item: (item[1] is None, -(item[1] or 0)))
+    labels = [item[0] for item in profile_rows]
+    values = [item[1] for item in profile_rows]
+    marker_colors = [BLUE if label in {"Human rights", "Governance", "Capacities"} else BLUE_MID if label in {"Frameworks", "Actions"} else BLUE_LIGHT for label in labels]
     fig = go.Figure(go.Bar(
         x=values,
         y=labels,
         orientation="h",
-        marker={"color": [BLUE, BLUE, BLUE, BLUE_MID, BLUE_MID, BLUE_LIGHT]},
+        marker={"color": marker_colors},
         text=[f"{v:.1f}" for v in values],
         textposition="outside",
         cliponaxis=False,
         hovertemplate="<b>%{y}</b><br>%{x:.1f}<extra></extra>",
     ))
-    fig.update_layout(**_figure_layout(), height=340)
+    fig.update_layout(**_figure_layout(), height=320)
     fig.update_xaxes(range=[0, 105], title="Score (0–100)", gridcolor=GRID, zeroline=False)
-    fig.update_yaxes(title=None, automargin=True)
+    fig.update_yaxes(title=None, automargin=True, autorange="reversed", categoryorder="array", categoryarray=labels)
     return fig.to_plotly_json()
 
 

@@ -68,6 +68,7 @@ def api_rankings():
         region=request.args.get("region", "All regions"),
         sort=request.args.get("sort", "ranking"),
         direction=request.args.get("direction", "asc"),
+        iso3=request.args.get("iso3", ""),
     ))
 
 

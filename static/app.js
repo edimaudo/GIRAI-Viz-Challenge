@@ -8,7 +8,6 @@
     pillar: 'Thematic score',
     region: 'All regions',
     currentCountry: null,
-    rankRegion: 'All regions',
     rankSort: 'ranking',
     rankDirection: 'asc',
     comparisonMode: 'regions',
@@ -17,7 +16,6 @@
   };
 
   const chartIds = ['mapChart', 'regionalChart', 'pillarChart', 'ladderChart', 'countryChart', 'comparisonChart'];
-  const SWATCH_LEVELS = [0, 20, 40, 60, 80, 100];
 
   function chartScale() {
     const map = { small: 0.92, medium: 1, large: 1.16 };
@@ -80,6 +78,32 @@
     return meta.themes;
   }
 
+  function countryRowsForRegion() {
+    return state.region === 'All regions'
+      ? meta.country_options
+      : meta.country_options.filter(c => c.region === state.region);
+  }
+
+  function syncCountrySelects() {
+    const rows = countryRowsForRegion();
+    const valid = new Set(rows.map(c => c.iso3));
+    if (state.currentCountry && !valid.has(state.currentCountry)) {
+      state.currentCountry = null;
+      hideProfile();
+    }
+
+    const options = [
+      { value: '', label: 'All countries' },
+      ...rows.map(c => ({ value: c.iso3, label: state.region === 'All regions' ? `${c.country} — ${c.region}` : c.country })),
+    ];
+    fillSelect($('#countrySelectData'), options, state.currentCountry || '');
+    fillSelect($('#countrySelectRank'), options, state.currentCountry || '');
+    const hasCountry = Boolean(state.currentCountry);
+    $('#clearCountryButton').hidden = !hasCountry;
+    $('#countrySelectData').setAttribute('aria-label', state.region === 'All regions' ? 'Country filter across all regions' : `Country filter within ${state.region}`);
+    $('#countrySelectRank').setAttribute('aria-label', state.region === 'All regions' ? 'Country filter across all regions' : `Country filter within ${state.region}`);
+  }
+
   function syncControls() {
     fillSelect($('#metricSelect'), metricOptions(), state.metric);
     $('#pillarUnit').hidden = state.view !== 'thematic';
@@ -89,14 +113,18 @@
     }
     $('#metricUnit').querySelector('label').textContent = state.view === 'thematic' ? 'Thematic area' : 'Measure';
     fillSelect($('#regionSelect'), ['All regions', ...meta.regions], state.region);
+    fillSelect($('#rankRegion'), ['All regions', ...meta.regions], state.region);
+    syncCountrySelects();
   }
 
-  function urlParams() {
-    return new URLSearchParams({ view: state.view, metric: state.metric, pillar: state.pillar, region: state.region });
+  function urlParams(includeCountry = false) {
+    const params = new URLSearchParams({ view: state.view, metric: state.metric, pillar: state.pillar, region: state.region });
+    if (includeCountry && state.currentCountry) params.set('country', state.currentCountry);
+    return params;
   }
 
   function updateURL() {
-    const params = urlParams().toString();
+    const params = urlParams(true).toString();
     history.replaceState({}, '', params ? `${location.pathname}?${params}` : location.pathname);
   }
 
@@ -116,7 +144,7 @@
   }
 
   async function loadExplore() {
-    const qs = urlParams();
+    const qs = urlParams(false);
     try {
       const [data, map, regional, pillars, ladder] = await Promise.all([
         getJSON(`/api/explore?${qs}`),
@@ -152,6 +180,7 @@
       renderPlot('pillarChart', pillars);
       renderPlot('ladderChart', ladder);
       updateMapLegend();
+      syncCountrySelects();
       updateURL();
     } catch (err) {
       $('#headlineTitle').textContent = 'The visualization could not load.';
@@ -171,20 +200,45 @@
     });
   }
 
+  function setCountrySelectValue(iso3) {
+    ['#countrySelectData', '#countrySelectRank'].forEach(sel => {
+      const el = $(sel);
+      if (el) el.value = iso3 || '';
+    });
+  }
+
   async function selectCountry(iso3) {
     try {
+      const country = meta.country_options.find(c => c.iso3 === iso3);
+      if (!country) return;
+      if (state.region !== 'All regions' && country.region !== state.region) {
+        state.region = country.region;
+        syncControls();
+        await loadExplore();
+      }
       const profile = await getJSON(`/api/country/${encodeURIComponent(iso3)}`);
-      const r = profile.summary;
       state.currentCountry = iso3;
-      $('#selectedCountry').hidden = false;
-      $('#selectedCountryName').textContent = r.country;
-      $('#selectedCountryMeta').textContent = `${r.region} · rank ${r.ranking}`;
-      $('#selectedCountryScore').textContent = Number(r.index_score).toFixed(2);
-      $$('.ranking-table tbody tr').forEach(tr => tr.setAttribute('aria-selected', tr.dataset.iso3 === iso3 ? 'true' : 'false'));
+      setCountrySelectValue(iso3);
+      syncCountrySelects();
       await showProfile(profile);
+      await loadRankings();
+      updateURL();
     } catch (err) {
       console.error(err);
     }
+  }
+
+  function hideProfile() {
+    const panel = $('#profilePanel');
+    if (panel) panel.hidden = true;
+    const layout = $('#rankingContentGrid');
+    if (layout) layout.classList.remove('has-profile');
+    $('#profileHeading').textContent = 'Select a row.';
+    $('#profileMeta').textContent = 'The selected country’s dimensions, pillars and thematic areas.';
+    $('#profileIndex').textContent = '—';
+    $('#profileThemes').innerHTML = '';
+    const chart = $('#countryChart');
+    if (chart && chart.data) Plotly.purge(chart);
   }
 
   async function showProfile(profile) {
@@ -201,6 +255,8 @@
     });
     const fig = await getJSON(`/api/figure/country_profile?iso3=${encodeURIComponent(r.iso3)}`);
     renderPlot('countryChart', fig);
+    $('#profilePanel').hidden = false;
+    $('#rankingContentGrid').classList.add('has-profile');
   }
 
   function escapeHTML(s) {
@@ -208,38 +264,53 @@
   }
 
   async function loadRankings() {
-    const p = new URLSearchParams({ region: state.rankRegion, sort: state.rankSort, direction: state.rankDirection });
-    const rows = await getJSON(`/api/rankings?${p}`);
-    const body = $('#rankingBody');
-    body.innerHTML = '';
-    $('#rankingCount').textContent = rows.length;
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.dataset.iso3 = r.iso3;
-      tr.tabIndex = 0;
-      tr.setAttribute('aria-selected', state.currentCountry === r.iso3 ? 'true' : 'false');
-      tr.innerHTML = `
-        <td>${r.ranking}</td>
-        <td class="country-col"><strong>${escapeHTML(r.country)}</strong><div class="muted-code">${r.iso3}</div></td>
-        <td>${escapeHTML(r.region)}</td>
-        <td class="num"><strong>${Number(r.index_score).toFixed(2)}</strong></td>
-        <td class="num">${Number(r.human_rights_score).toFixed(1)}</td>
-        <td class="num">${Number(r.governance_score).toFixed(1)}</td>
-        <td class="num">${Number(r.capacities_score).toFixed(1)}</td>`;
-      tr.addEventListener('click', () => selectCountry(r.iso3));
-      tr.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCountry(r.iso3); }
-      });
-      body.appendChild(tr);
+    const p = new URLSearchParams({
+      region: state.region,
+      sort: state.rankSort,
+      direction: state.rankDirection,
     });
-    syncComparisonCountryOptions();
+    if (state.currentCountry) p.set('iso3', state.currentCountry);
+
+    try {
+      const rows = await getJSON(`/api/rankings?${p}`);
+      const body = $('#rankingBody');
+      body.innerHTML = '';
+      $('#rankingCount').textContent = rows.length;
+      $('#rankingCountLabel').textContent = rows.length === 1 ? 'country & jurisdiction shown' : 'countries & jurisdictions shown';
+
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.dataset.iso3 = r.iso3;
+        tr.tabIndex = 0;
+        tr.setAttribute('aria-selected', state.currentCountry === r.iso3 ? 'true' : 'false');
+        tr.innerHTML = `
+          <td>${r.ranking}</td>
+          <td class="country-col"><strong>${escapeHTML(r.country)}</strong><div class="muted-code">${r.iso3}</div></td>
+          <td>${escapeHTML(r.region)}</td>
+          <td class="num"><strong>${Number(r.index_score).toFixed(2)}</strong></td>
+          <td class="num">${Number(r.human_rights_score).toFixed(1)}</td>
+          <td class="num">${Number(r.governance_score).toFixed(1)}</td>
+          <td class="num">${Number(r.capacities_score).toFixed(1)}</td>`;
+        tr.addEventListener('click', () => selectCountry(r.iso3));
+        tr.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCountry(r.iso3); }
+        });
+        body.appendChild(tr);
+      });
+      syncCountrySelects();
+      if (!state.currentCountry) hideProfile();
+    } catch (err) {
+      $('#rankingCount').textContent = '—';
+      $('#rankingCountLabel').textContent = 'countries & jurisdictions shown';
+      $('#rankingBody').innerHTML = `<tr><td colspan="7">${escapeHTML(err.message)}</td></tr>`;
+    }
   }
 
   function getCountryOptionsForRegion() {
-    const rows = state.rankRegion === 'All regions'
-      ? meta.country_options
-      : meta.country_options.filter(c => c.region === state.rankRegion);
-    return rows.map(c => ({ value: c.iso3, label: state.rankRegion === 'All regions' ? `${c.country} — ${c.region}` : c.country }));
+    return countryRowsForRegion().map(c => ({
+      value: c.iso3,
+      label: state.region === 'All regions' ? `${c.country} — ${c.region}` : c.country,
+    }));
   }
 
   function syncComparisonRegions() {
@@ -248,12 +319,17 @@
     if ($('#compareFirst').value === $('#compareSecond').value) {
       const alternate = meta.regions.find(r => r !== $('#compareFirst').value);
       $('#compareSecond').value = alternate || meta.regions[1];
+      state.comparisonSecond = $('#compareSecond').value;
     }
   }
 
   function syncComparisonCountryOptions() {
     const options = getCountryOptionsForRegion();
-    if (!options.length) return;
+    if (options.length < 2) {
+      fillSelect($('#compareFirst'), options, options[0]?.value || '');
+      fillSelect($('#compareSecond'), options, options[0]?.value || '');
+      return;
+    }
     const valid = new Set(options.map(o => o.value));
     if (!valid.has(state.comparisonFirst)) state.comparisonFirst = options[0].value;
     if (!valid.has(state.comparisonSecond) || state.comparisonSecond === state.comparisonFirst) {
@@ -335,6 +411,8 @@
     if (p.get('metric')) state.metric = p.get('metric');
     if (p.get('pillar')) state.pillar = p.get('pillar');
     if (p.get('region')) state.region = p.get('region');
+    if (p.get('country')) state.currentCountry = p.get('country').toUpperCase();
+    if (!meta.country_options.some(c => c.iso3 === state.currentCountry)) state.currentCountry = null;
     syncControls();
   }
 
@@ -348,21 +426,40 @@
     });
     $('#metricSelect').addEventListener('change', () => { state.metric = $('#metricSelect').value; loadExplore(); });
     $('#pillarSelect').addEventListener('change', () => { state.pillar = $('#pillarSelect').value; loadExplore(); });
-    $('#regionSelect').addEventListener('change', () => { state.region = $('#regionSelect').value; loadExplore(); });
-    $('#themeToggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
-    $$('button[data-scale]').forEach(btn => btn.addEventListener('click', () => setScale(btn.dataset.scale)));
-    $('#openCountryRank').addEventListener('click', () => {
-      if (!state.currentCountry) return;
-      activateTab('rankingsTab');
-      setTimeout(() => selectCountry(state.currentCountry), 50);
-    });
+
+    const handleRegionChange = () => {
+      state.region = $('#regionSelect').value;
+      syncControls();
+      loadExplore();
+      loadRankings();
+      if (!$('#rankingsTab').hidden) loadComparison();
+    };
+    $('#regionSelect').addEventListener('change', handleRegionChange);
     $('#rankRegion').addEventListener('change', () => {
-      state.rankRegion = $('#rankRegion').value;
+      state.region = $('#rankRegion').value;
+      syncControls();
+      loadExplore();
       loadRankings();
       loadComparison();
     });
+
+    const handleCountryChange = (source) => {
+      const value = $(source).value;
+      if (!value) {
+        clearCountry();
+      } else {
+        selectCountry(value);
+      }
+    };
+    $('#countrySelectData').addEventListener('change', () => handleCountryChange('#countrySelectData'));
+    $('#countrySelectRank').addEventListener('change', () => handleCountryChange('#countrySelectRank'));
+    $('#clearCountryButton').addEventListener('click', clearCountry);
+    $('#profileClearButton').addEventListener('click', clearCountry);
+
     $('#rankSort').addEventListener('change', () => { state.rankSort = $('#rankSort').value; loadRankings(); });
     $('#rankDirection').addEventListener('change', () => { state.rankDirection = $('#rankDirection').value; loadRankings(); });
+    $('#themeToggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+    $$('button[data-scale]').forEach(btn => btn.addEventListener('click', () => setScale(btn.dataset.scale)));
     $$('.comparison-mode-button').forEach(btn => btn.addEventListener('click', () => {
       state.comparisonMode = btn.dataset.mode;
       syncComparisonControls();
@@ -378,6 +475,14 @@
     });
   }
 
+  async function clearCountry() {
+    state.currentCountry = null;
+    syncCountrySelects();
+    hideProfile();
+    await loadRankings();
+    updateURL();
+  }
+
   async function start() {
     const savedTheme = localStorage.getItem('girai-theme') || 'light';
     const savedScale = localStorage.getItem('girai-scale') || 'medium';
@@ -385,11 +490,14 @@
     setScale(savedScale);
     initFromURL();
     $('#viewSelect').value = state.view;
-    fillSelect($('#rankRegion'), ['All regions', ...meta.regions], state.rankRegion);
+    $('#rankRegion').value = state.region;
     wireEvents();
     await loadExplore();
     wireMapClicks();
     syncComparisonControls();
+    if (state.currentCountry) {
+      await selectCountry(state.currentCountry);
+    }
   }
 
   start().catch(console.error);
