@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive editorial atlas of responsible AI across 138 countries using the 2024 Global Index on Responsible AI dataset.">
+  <title>Responsible AI Atlas — GIRAI 2024</title>
+  <link rel="preconnect" href="https://cdn.plot.ly">
+  <script src="https://cdn.plot.ly/plotly-3.0.1.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body data-scale="medium">
+<a class="skip-link" href="#main-content">Skip to content</a>
+<div class="site-shell">
+  <header class="masthead">
+    <div class="masthead-brand">
+      <span class="brand-block">GIRAI<br><span>2024</span></span>
+      <span class="brand-title">Responsible AI Atlas</span>
+    </div>
+    <div class="masthead-tools" aria-label="Display settings">
+      <div class="tool-group">
+        <span class="tool-label">Text</span>
+        <div class="segmented" role="group" aria-label="Text size">
+          <button type="button" data-scale="small" aria-pressed="false">Small</button>
+          <button type="button" data-scale="medium" aria-pressed="true">Medium</button>
+          <button type="button" data-scale="large" aria-pressed="false">Large</button>
+        </div>
+      </div>
+      <button type="button" class="theme-toggle" id="themeToggle" aria-pressed="false">Dark mode</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="kicker">2024 Global Index on Responsible AI</p>
+        <h1 id="hero-title">Responsible AI world View.</h1>
+        <p class="hero-deck">Explore where responsible AI frameworks, government action, human-rights protections and supporting capacities intersect.</p>
+      </div>
+      <div class="stat-strip" aria-label="Dataset summary">
+        <div class="stat">
+          <strong>138</strong>
+          <span>countries &amp; jurisdictions</span>
+        </div>
+        <div class="stat">
+          <strong>19</strong>
+          <span>thematic areas</span>
+        </div>
+        <div class="stat">
+          <strong>3</strong>
+          <span>dimensions</span>
+        </div>
+      </div>
+    </section>
+
+    <nav class="main-tabs" aria-label="Primary views" role="tablist">
+      <button class="tab-button is-active" data-tab="dataTab" role="tab" aria-selected="true" aria-controls="dataTab">Data</button>
+      <button class="tab-button" data-tab="rankingsTab" role="tab" aria-selected="false" aria-controls="rankingsTab">Ranking &amp; scores</button>
+    </nav>
+
+    <section id="dataTab" class="tab-panel is-active" role="tabpanel" aria-labelledby="data-tab-heading">
+      <div class="section-intro">
+        <div>
+          <h2 id="data-tab-heading">The global picture, by place and theme.</h2>
+          <p>Change the view to move from the overall index to a dimension or thematic area.</p>
+        </div>
+      </div>
+
+      <div class="control-rail" aria-label="Data controls">
+        <div class="control-unit">
+          <label for="viewSelect">View</label>
+          <select id="viewSelect">
+            <option value="overall">Overall index</option>
+            <option value="dimension">Dimension</option>
+            <option value="thematic">Thematic area</option>
+          </select>
+        </div>
+        <div class="control-unit" id="metricUnit">
+          <label for="metricSelect">Measure</label>
+          <select id="metricSelect"></select>
+        </div>
+        <div class="control-unit" id="pillarUnit" hidden>
+          <label for="pillarSelect">Pillar</label>
+          <select id="pillarSelect"></select>
+        </div>
+        <div class="control-unit">
+          <label for="regionSelect">Region</label>
+          <select id="regionSelect"></select>
+        </div>
+      </div>
+
+      <div class="story-grid">
+        <div class="map-stage">
+          <div class="map-heading">
+            <div>
+              <p class="kicker">World map</p>
+              <h3 id="mapTitle">Overall index score</h3>
+            </div>
+            <span class="map-context" id="mapContext">All regions</span>
+          </div>
+          <div id="mapChart" class="plot map-plot" aria-label="World map of responsible AI scores"></div>
+          <div class="map-legend" aria-label="Score legend">
+            <div class="legend-title">Score scale</div>
+            <div class="legend-row">
+              <span class="legend-label">0</span>
+              <span class="legend-swatch" data-level="0"></span>
+              <span class="legend-swatch" data-level="20"></span>
+              <span class="legend-swatch" data-level="40"></span>
+              <span class="legend-swatch" data-level="60"></span>
+              <span class="legend-swatch" data-level="80"></span>
+              <span class="legend-swatch" data-level="100"></span>
+              <span class="legend-label">100</span>
+              <span class="legend-note">Higher = stronger measured conditions</span>
+            </div>
+          </div>
+        </div>
+        <aside class="insight-panel" aria-labelledby="insight-heading">
+          <p class="kicker" id="insight-heading">Current selection</p>
+          <h3 id="headlineTitle">Loading…</h3>
+          <p id="headlineSub">Loading the dataset.</p>
+          <div class="insight-rule"></div>
+          <p id="headlineRegional"></p>
+          <div class="metric-pair">
+            <div><strong id="medianValue">—</strong><span>selected-view median</span></div>
+            <div><strong id="countryCount">—</strong><span>countries shown</span></div>
+          </div>
+          <p class="method-note">All summary comparisons use the median. Scores are shown on a 0–100 scale.</p>
+        </aside>
+      </div>
+
+      <div class="two-column">
+        <section class="editorial-panel">
+          <div class="panel-heading">
+            <div>
+              <h3>Regional spread</h3>
+              <p>Median score by GIRAI region. The selected region is highlighted while the full regional context remains visible.</p>
+            </div>
+          </div>
+          <div id="regionalChart" class="plot" aria-label="Regional median score comparison"></div>
+        </section>
+        <section class="editorial-panel">
+          <div class="panel-heading">
+            <div>
+              <h3 id="pillarTitle">Pillar profile</h3>
+              <p id="pillarSubtitle">Government frameworks, government actions and non-state actors.</p>
+            </div>
+          </div>
+          <div id="pillarChart" class="plot" aria-label="Pillar median score comparison"></div>
+        </section>
+      </div>
+
+      <section class="editorial-panel ladder-panel">
+        <div class="panel-heading">
+          <div>
+            <h3 id="ladderTitle">Human Rights and AI thematic ladder</h3>
+            <p id="ladderSubtitle">Median thematic scores inside the selected dimension.</p>
+          </div>
+        </div>
+        <div id="ladderChart" class="plot" aria-label="Thematic area median score comparison"></div>
+      </section>
+
+      <section id="selectedCountry" class="country-spotlight" hidden aria-labelledby="selectedCountryName">
+        <div>
+          <p class="kicker">Selected country</p>
+          <h3 id="selectedCountryName">—</h3>
+          <p id="selectedCountryMeta">—</p>
+        </div>
+        <div class="country-score"><strong id="selectedCountryScore">—</strong><span>overall index</span></div>
+        <button class="utility-button" id="openCountryRank" type="button">Open in ranking &amp; scores</button>
+      </section>
+    </section>
+
+    <section id="rankingsTab" class="tab-panel" role="tabpanel" aria-labelledby="ranking-tab-heading" hidden>
+      <div class="section-intro">
+        <div>
+          <h2 id="ranking-tab-heading">Ranking &amp; scores</h2>
+          <p>Filter the table by region, then inspect country scores or compare two places directly.</p>
+        </div>
+      </div>
+
+      <div class="ranking-layout">
+        <div class="ranking-main">
+          <div class="control-rail ranking-controls">
+            <div class="control-unit">
+              <label for="rankRegion">Region</label>
+              <select id="rankRegion"></select>
+            </div>
+            <div class="control-unit">
+              <label for="rankSort">Sort</label>
+              <select id="rankSort">
+                <option value="ranking">Rank</option>
+                <option value="index_score">Overall score</option>
+                <option value="human_rights_score">Human rights</option>
+                <option value="governance_score">Governance</option>
+                <option value="capacities_score">Capacities</option>
+              </select>
+            </div>
+            <div class="control-unit">
+              <label for="rankDirection">Order</label>
+              <select id="rankDirection">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-note"><strong id="rankingCount">138</strong> countries &amp; jurisdictions shown</div>
+          <div class="table-wrap">
+            <table class="ranking-table">
+              <caption class="sr-only">GIRAI 2024 country rankings and dimension scores</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col" class="country-col">Country / jurisdiction</th>
+                  <th scope="col">Region</th>
+                  <th scope="col">Index</th>
+                  <th scope="col">Human rights</th>
+                  <th scope="col">Governance</th>
+                  <th scope="col">Capacities</th>
+                </tr>
+              </thead>
+              <tbody id="rankingBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <aside class="profile-panel" aria-labelledby="profileHeading">
+          <div class="profile-heading">
+            <p class="kicker">Country profile</p>
+            <h3 id="profileHeading">Select a row.</h3>
+            <p id="profileMeta">The selected country’s dimensions, pillars and thematic areas.</p>
+          </div>
+          <div class="profile-score"><strong id="profileIndex">—</strong><span>overall index score</span></div>
+          <div id="countryChart" class="plot" aria-label="Selected country score profile"></div>
+          <div class="profile-themes">
+            <h4>Thematic areas</h4>
+            <div id="profileThemes"></div>
+          </div>
+        </aside>
+      </div>
+
+      <section class="editorial-panel comparison-panel" aria-labelledby="comparisonHeading">
+        <div class="panel-heading">
+          <div>
+            <h3 id="comparisonHeading">Compare two regions or two countries</h3>
+            <p>Regions are compared using median scores across countries. Country comparisons use the published country scores.</p>
+          </div>
+        </div>
+        <div class="comparison-controls">
+          <div class="comparison-mode" role="group" aria-label="Comparison type">
+            <button type="button" class="comparison-mode-button is-active" data-mode="regions" aria-pressed="true">Regions</button>
+            <button type="button" class="comparison-mode-button" data-mode="countries" aria-pressed="false">Countries</button>
+          </div>
+          <div class="comparison-selects">
+            <div class="control-unit" id="comparisonRegionUnit">
+              <label for="compareFirst">Region 1</label>
+              <select id="compareFirst"></select>
+            </div>
+            <div class="control-unit" id="comparisonRegionUnitSecond">
+              <label for="compareSecond">Region 2</label>
+              <select id="compareSecond"></select>
+            </div>
+          </div>
+          <div class="comparison-note" id="comparisonNote">Two selections are required.</div>
+        </div>
+        <div id="comparisonChart" class="plot" aria-label="Comparison of two selected regions or countries"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div><strong>Source</strong><br>2024 Global Index on Responsible AI dataset supplied for the challenge.</div>
+    <div><strong>Coverage</strong><br>Data period: 1 Nov 2021 to 1 Nov 2023.</div>
+    <div><strong>Purpose</strong><br>Independent interactive visualization for exploration and advocacy use.</div>
+  </footer>
+</div>
+
+<script>
+  window.GIRAI_META = {{ meta|tojson }};
+</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

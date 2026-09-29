@@ -1,0 +1,71 @@
+{
+  "countries": 138,
+  "dimensions": [
+    "Human Rights and AI",
+    "Responsible AI Capacities",
+    "Responsible AI Governance"
+  ],
+  "themes": [
+    "Access to Remedy and Redress",
+    "Bias and Unfair Discrimination",
+    "Children's Rights",
+    "Competitions Authorities",
+    "Cultural and Linguistic Diversity",
+    "Data Protection and Privacy",
+    "Gender Equality",
+    "Human Oversight and Determination",
+    "Impact Assessments",
+    "International Cooperation",
+    "Labour Protection and Right to Work",
+    "National AI Policy",
+    "Proportionality and Do No Harm",
+    "Public Participation and Awareness",
+    "Public Procurement",
+    "Public Sector Skills Development",
+    "Responsibility and Accountability",
+    "Safety, Accuracy and Reliability",
+    "Transparency and Explainability"
+  ],
+  "theme_dimension": {
+    "Access to Remedy and Redress": "Responsible AI Governance",
+    "Bias and Unfair Discrimination": "Human Rights and AI",
+    "Children's Rights": "Human Rights and AI",
+    "Competitions Authorities": "Responsible AI Capacities",
+    "Cultural and Linguistic Diversity": "Human Rights and AI",
+    "Data Protection and Privacy": "Human Rights and AI",
+    "Gender Equality": "Human Rights and AI",
+    "Human Oversight and Determination": "Responsible AI Governance",
+    "Impact Assessments": "Responsible AI Governance",
+    "International Cooperation": "Responsible AI Capacities",
+    "Labour Protection and Right to Work": "Human Rights and AI",
+    "National AI Policy": "Responsible AI Governance",
+    "Proportionality and Do No Harm": "Responsible AI Governance",
+    "Public Participation and Awareness": "Human Rights and AI",
+    "Public Procurement": "Responsible AI Governance",
+    "Public Sector Skills Development": "Responsible AI Capacities",
+    "Responsibility and Accountability": "Responsible AI Governance",
+    "Safety, Accuracy and Reliability": "Responsible AI Governance",
+    "Transparency and Explainability": "Responsible AI Governance"
+  },
+  "regions": [
+    "Africa",
+    "Asia and Oceania",
+    "Caribbean",
+    "Europe",
+    "Middle East",
+    "North America",
+    "South and Central America"
+  ],
+  "region_counts": {
+    "Africa": 41,
+    "Asia and Oceania": 30,
+    "Caribbean": 9,
+    "Europe": 32,
+    "Middle East": 9,
+    "North America": 3,
+    "South and Central America": 14
+  },
+  "source": "2024 Global Index on Responsible AI",
+  "data_period": "2021-11-01 to 2023-11-01",
+  "overall_median": 12.13
+}
