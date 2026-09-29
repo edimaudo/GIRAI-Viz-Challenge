@@ -6,7 +6,7 @@ from pathlib import Path
 
 import plotly.graph_objects as go
 import polars as pl
-import numpy
+#import numpy
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
