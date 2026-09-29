@@ -1,4 +1,4 @@
-# 2024 Girai Visualization Challenge
+# 2024 GIRAI Visualization Challenge
 
 2024 Global Index on Responsible AI data visualization challenge.
 
